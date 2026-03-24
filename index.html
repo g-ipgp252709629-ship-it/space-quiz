@@ -1,0 +1,464 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Space Pair‑and‑Match 🚀</title>
+  <style>
+    :root {
+      --bg: #0b132b;
+      --card: #1a1a2e;
+      --highlight: #4cc9f0;
+      --wrong: #f72585;
+      --correct: #74b9ff;
+      --text: #e4e4e4;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      padding: 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--highlight);
+      margin-bottom: 8px;
+      font-size: 1.9em;
+      text-shadow: 0 0 10px rgba(76, 201, 240, 0.5);
+    }
+
+    p {
+      text-align: center;
+      margin-bottom: 20px;
+      font-size: 1.1em;
+      opacity: 0.9;
+    }
+
+    /* Progress bar */
+    .progress-container {
+      width: 100%;
+      max-width: 600px;
+      height: 12px;
+      background: #111;
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 20px;
+    }
+
+    .progress-bar {
+      height: 100%;
+      background: var(--highlight);
+      width: 0%;
+      border-radius: 6px;
+      transition: width 0.3s ease;
+    }
+
+    /* Quiz card */
+    #quiz {
+      width: 100%;
+      max-width: 600px;
+      background: var(--card);
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+      display: none;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    #fact {
+      font-size: 1.1em;
+      padding: 16px;
+      background: #16213e;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      border-left: 4px solid var(--highlight);
+    }
+
+    #options {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    button.option-btn {
+      padding: 14px;
+      border: 2px solid var(--highlight);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--text);
+      font-size: 0.95em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    button.option-btn:hover {
+      background: var(--highlight);
+      color: black;
+      transform: translateY(-2px);
+    }
+
+    button.option-btn.correct {
+      background: var(--correct);
+      border-color: var(--correct);
+    }
+
+    button.option-btn.wrong {
+      background: var(--wrong);
+      border-color: var(--wrong);
+    }
+
+    #feedback {
+      margin-top: 16px;
+      padding: 10px;
+      border-radius: 8px;
+      font-weight: 600;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    #feedback.show {
+      opacity: 1;
+    }
+
+    #feedback.correct {
+      background: rgba(76, 201, 240, 0.3);
+      color: #74b9ff;
+    }
+
+    #feedback.wrong {
+      background: rgba(247, 37, 133, 0.3);
+      color: var(--wrong);
+    }
+
+    #score {
+      font-size: 1.2em;
+      margin-top: 20px;
+      text-align: center;
+      color: var(--highlight);
+    }
+
+    button#start-btn,
+    button#restart-btn {
+      margin-top: 20px;
+      padding: 12px 24px;
+      font-size: 1.1em;
+      border: none;
+      border-radius: 12px;
+      background: var(--highlight);
+      color: black;
+      cursor: pointer;
+      box-shadow: 0 0 15px rgba(76, 201, 240, 0.5);
+      transition: all 0.2s ease;
+    }
+
+    button#start-btn:hover,
+    button#restart-btn:hover {
+      transform: scale(1.05);
+    }
+
+    /* Hidden audio elements */
+    audio {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>🚀 Space Pair‑and‑Match Quiz</h1>
+  <p>Match each space object with the correct fact and hear the sound of success (or warning)!</p>
+
+  <!-- SOUND FILES -->
+  <!-- You can replace these URLs or put your own .mp3 files in the same folder. -->
+  <audio id="correct-sound">
+    <source src="https://cdn.pixabay.com/audio/2024/01/25/audio_36736db1dc.mp3" type="audio/mp3">
+    Your browser does not support the audio element.
+  </audio>
+
+  <audio id="wrong-sound">
+    <source src="https://cdn.pixabay.com/audio/2022/07/17/audio_11330ec943.mp3" type="audio/mp3">
+    Your browser does not support the audio element.
+  </audio>
+
+  <!-- Progress bar -->
+  <div class="progress-container">
+    <div id="progress-bar" class="progress-bar"></div>
+  </div>
+
+  <button id="start-btn" onclick="startQuiz()">Start Quiz</button>
+
+  <div id="quiz">
+    <div id="fact"></div>
+
+    <div id="options"></div>
+
+    <div id="feedback"></div>
+
+    <div id="score"></div>
+
+    <button id="restart-btn" onclick="startQuiz()" style="display: none;">
+      Play Again 🚀
+    </button>
+  </div>
+
+  <script>
+    // --- Data: Bodies and their facts ---
+    const bodies = [
+      "Sun",
+      "Mercury",
+      "Venus",
+      "Earth",
+      "Mars",
+      "Jupiter",
+      "Saturn",
+      "Uranus",
+      "Neptune",
+      "Pluto",
+      "Asteroids",
+      "Meteoroids, Meteors, and Meteorites",
+      "Comets"
+    ];
+
+    const facts = {
+      "Sun": [
+        "huge ball of hot gases, mostly hydrogen and helium",
+        "diameter is approximately 1.39 million kilometers (about 109 times Earth's)",
+        "surface temperature is about 5,500°C, core about 15 million°C",
+        "provides light and heat for life on Earth",
+        "sunlight takes about 8 minutes to reach Earth"
+      ],
+      "Mercury": [
+        "closest planet to the Sun",
+        "diameter approximately 4,880 km (smaller than Earth)",
+        "day temperature up to about 430°C, night down to about −180°C",
+        "rocky surface covered with many craters",
+        "one year ≈ 88 Earth days, one day ≈ 59 Earth days"
+      ],
+      "Venus": [
+        "second planet from the Sun",
+        "diameter about 12,100 km (almost the same as Earth)",
+        "hottest planet (surface ≈ 465°C)",
+        "thick atmosphere of carbon dioxide and clouds of sulfuric acid",
+        "rotates backward; one day longer than one year"
+      ],
+      "Earth": [
+        "third planet from the Sun",
+        "diameter about 12,742 km",
+        "atmosphere ≈ 78% nitrogen, 21% oxygen",
+        "about 71% of surface is water",
+        "has one natural satellite, the Moon; only planet known to support life"
+      ],
+      "Mars": [
+        "fourth planet from the Sun",
+        "diameter about 6,779 km (about half Earth's size)",
+        "surface is red because of iron oxide",
+        "has mountains, valleys, and polar ice caps",
+        "temperature ranges from about −125°C to 20°C",
+        "has two small moons: Phobos and Deimos",
+        "has the largest volcano in the solar system, Olympus Mons"
+      ],
+      "Jupiter": [
+        "fifth planet from the Sun and the largest in the solar system",
+        "diameter about 139,820 km",
+        "made mostly of hydrogen and helium",
+        "has a giant storm called the Great Red Spot",
+        "has more than 70 moons, including Ganymede (largest moon in the system)",
+        "has a very strong magnetic field and faint rings"
+      ],
+      "Saturn": [
+        "sixth planet from the Sun",
+        "diameter about 116,460 km",
+        "made mostly of gas with large rings of ice and rock",
+        "has more than 80 moons, including Titan (larger than Mercury)",
+        "has very fast winds up to about 1,800 km/h",
+        "density so low it would float in water if a big enough ocean existed"
+      ],
+      "Uranus": [
+        "seventh planet from the Sun",
+        "diameter about 50,724 km",
+        "made of hydrogen, helium, and icy materials",
+        "spins on its side at an angle of about 98 degrees",
+        "appears blue because of methane in its atmosphere",
+        "very cold, down to about −224°C",
+        "has 27 known moons"
+      ],
+      "Neptune": [
+        "eighth planet from the Sun",
+        "diameter about 49,244 km",
+        "made of hydrogen, helium, and methane gas",
+        "has the strongest winds in the system (up to about 2,100 km/h)",
+        "appears deep blue",
+        "has 14 known moons, including Triton",
+        "one year ≈ 165 Earth years"
+      ],
+      "Pluto": [
+        "small dwarf planet far from the Sun",
+        "diameter about 2,377 km",
+        "frozen surface; temperature about −229°C",
+        "has five known moons, with Charon the largest",
+        "takes about 248 Earth years to orbit the Sun",
+        "sometimes closer to the Sun than Neptune"
+      ],
+      "Asteroids": [
+        "small, rocky objects that orbit the Sun",
+        "most found in the asteroid belt between Mars and Jupiter",
+        "can be very small or several hundred km across",
+        "made of rock, metal, or both",
+        "studied to learn about the early solar system"
+      ],
+      "Meteoroids, Meteors, and Meteorites": [
+        "meteoroids are small pieces of rock or metal in space",
+        "when entering Earth’s atmosphere and burning up → meteor (‘shooting star’)",
+        "if it survives and lands on Earth → meteorite",
+        "most meteoroids are very small, but some large enough to make craters"
+      ],
+      "Comets": [
+        "icy bodies that orbit the Sun in long, oval paths",
+        "made of ice, dust, and rock",
+        "when close to the Sun, they heat up and form a glowing tail",
+        "the tail always points away from the Sun",
+        "famous comets like Halley’s Comet can be seen every few decades"
+      ]
+    };
+
+    // --- Game variables ---
+    const total = 10;
+    let score = 0;
+    let questionCount = 0;
+
+    const correctSound = document.getElementById("correct-sound");
+    const wrongSound = document.getElementById("wrong-sound");
+    const progressBar = document.getElementById("progress-bar");
+    const factEl = document.getElementById("fact");
+    const optionsEl = document.getElementById("options");
+    const feedbackEl = document.getElementById("feedback");
+    const scoreEl = document.getElementById("score");
+    const startBtn = document.getElementById("start-btn");
+    const restartBtn = document.getElementById("restart-btn");
+    const quizEl = document.getElementById("quiz");
+
+    // --- Helper: random item from array ---
+    function randomItem(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    // --- Play sound helper ---
+    function playCorrectSound() {
+      // prevent previous sound from cutting off
+      correctSound.currentTime = 0;
+      correctSound.play().catch(e => {
+        console.log("Audio play blocked by autoplay policy:", e);
+      });
+    }
+
+    function playWrongSound() {
+      wrongSound.currentTime = 0;
+      wrongSound.play().catch(e => {
+        console.log("Audio play blocked by autoplay policy:", e);
+      });
+    }
+
+    // --- Show feedback and sound ---
+    function showFeedback(correct, selected) {
+      feedbackEl.classList.remove("show", "correct", "wrong");
+      setTimeout(() => {
+        if (selected === correct) {
+          feedbackEl.textContent = "✅ Correct! Great match!";
+          feedbackEl.classList.add("show", "correct");
+          playCorrectSound(); // play correct sound
+        } else {
+          feedbackEl.textContent = `❌ Wrong. The correct body is: ${correct}`;
+          feedbackEl.classList.add("show", "wrong");
+          playWrongSound(); // play wrong sound
+        }
+      }, 10);
+
+      setTimeout(() => {
+        feedbackEl.classList.remove("show");
+        nextQuestion();
+      }, 1100);
+    }
+
+    // --- Generate a question ---
+    function nextQuestion() {
+      if (questionCount >= total) {
+        factEl.textContent = "Quiz finished! 🎉";
+        optionsEl.innerHTML = "";
+        scoreEl.innerHTML = `You scored: <strong>${score}</strong> out of <strong>${total}</strong>.`;
+        restartBtn.style.display = "block";
+        quizEl.style.display = "block";
+        return;
+      }
+
+      // pick correct body + one fact
+      const correctBody = randomItem(bodies);
+      const bodyFacts = facts[correctBody];
+      const fact = randomItem(bodyFacts);
+
+      // build options (4 choices, incl. correct answer)
+      let options = [correctBody];
+      while (options.length < 4) {
+        const opt = randomItem(bodies);
+        if (!options.includes(opt)) options.push(opt);
+      }
+      options.sort(() => 0.5 - Math.random());
+
+      factEl.textContent = fact;
+
+      const optsHtml = options.map((opt, i) => {
+        return `<button class="option-btn"
+                        onclick="handleAnswer('${opt}', '${correctBody}')">${opt}</button>`;
+      }).join("");
+      optionsEl.innerHTML = optsHtml;
+
+      const percent = Math.round((questionCount / total) * 100);
+      progressBar.style.width = `${percent}%`;
+
+      scoreEl.textContent = `Score: ${score} / ${questionCount} (of ${total})`;
+      questionCount++;
+    }
+
+    // --- Handle player choice ---
+    function handleAnswer(selected, correct) {
+      const buttons = document.querySelectorAll(".option-btn");
+      buttons.forEach(btn => {
+        if (btn.textContent === correct) {
+          btn.classList.add("correct");
+        } else if (btn.textContent === selected && selected !== correct) {
+          btn.classList.add("wrong");
+        }
+        btn.disabled = true;
+      });
+
+      if (selected === correct) score++;
+      showFeedback(correct, selected);
+    }
+
+    // --- Start or restart quiz ---
+    function startQuiz() {
+      startBtn.style.display = "none";
+      restartBtn.style.display = "none";
+      score = 0;
+      questionCount = 0;
+      progressBar.style.width = "0%";
+      quizEl.style.display = "block";
+      nextQuestion();
+    }
+  </script>
+</body>
+</html>
